@@ -51,29 +51,10 @@ orders = handle_nulls(orders)
 aisles = handle_nulls(aisles)
 departments = handle_nulls(departments)
 
-"""
-# Compter les commandes par heure
-orders.groupBy("order_hour_of_day").count().orderBy("order_hour_of_day").show()
-
-# Total commandes par utilisateur
-top_users = orders.groupBy("user_id").count().orderBy(desc("count")).limit(10)
-
-# Joindre avec order_products_prior et products pour rayon et department
-user_orders = top_users.join(orders, "user_id") \
-    .join(order_products_prior, "order_id") \
-    .join(products, "product_id") \
-    .join(aisles, "aisle_id") \
-    .join(departments, "department_id")
-
-# Distribution par rayons et départements
-from pyspark.sql.functions import countDistinct
-
-user_orders.groupBy("user_id", "aisle").count().orderBy("user_id", desc("count")).show()
-user_orders.groupBy("user_id", "department").count().orderBy("user_id", desc("count")).show()
 
 
-
-# Compter le nombre de fois qu'un produit a été commandé
+# --------------------Compter le nombre de fois qu'un produit a été commandé-----------------
+# 2️⃣ Les produits les plus commandés et les moins commandés
 product_counts = order_products_prior.groupBy("product_id") \
     .agg(count("*").alias("nb_commandes")) \
     .join(products, "product_id") \
@@ -85,9 +66,13 @@ product_counts.orderBy(desc("nb_commandes")).show(10)
 # Produits les moins commandés
 product_counts.orderBy(asc("nb_commandes")).show(10)
 
-# Distribution
+# --------------Distributionn---------------------------
+# Distribution du nombre de commandes par produit
 distribution = product_counts.groupBy("nb_commandes").count().orderBy("nb_commandes")
 distribution.show()
+
+
+#-------------------------------------
 
 # Par exemple, prendre 10 000 commandes seulement
 sample_orders = orders.filter(col("eval_set")=="prior").limit(10000)
@@ -132,6 +117,26 @@ aisle_pairs_count = aisle_pairs_count \
 # Top 10
 aisle_pairs_count.show(10, truncate=False)
 
+#---------- Compter les commandes par heure
+# Distribution horaire des commandes
+orders.groupBy("order_hour_of_day").count().orderBy("order_hour_of_day").show()
+
+# gros volume de commandes et distribution par rayons/départements
+#-----------Total commandes par utilisateur
+top_users = orders.groupBy("user_id").count().orderBy(desc("count")).limit(10)
+
+# Joindre avec order_products_prior et products pour rayon et department
+user_orders = top_users.join(orders, "user_id") \
+    .join(order_products_prior, "order_id") \
+    .join(products, "product_id") \
+    .join(aisles, "aisle_id") \
+    .join(departments, "department_id")
+
+# Distribution par rayons et départements
+from pyspark.sql.functions import countDistinct
+
+user_orders.groupBy("user_id", "aisle").count().orderBy("user_id", desc("count")).show()
+user_orders.groupBy("user_id", "department").count().orderBy("user_id", desc("count")).show()
 
 """
 
