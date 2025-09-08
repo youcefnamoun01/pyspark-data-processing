@@ -1,0 +1,7 @@
+{
+    "type": "struct",
+    "fields": [
+        {"name": "aisle_id", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "aisle", "type": "string", "nullable": true, "metadata": {}}
+    ]
+}

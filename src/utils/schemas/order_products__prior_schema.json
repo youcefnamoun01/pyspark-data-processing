@@ -1,0 +1,9 @@
+{
+    "type": "struct",
+    "fields": [
+        {"name": "order_id", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "product_id", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "add_to_cart_order", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "reordered", "type": "string", "nullable": true, "metadata": {}}
+    ]
+}

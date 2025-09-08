@@ -1,0 +1,12 @@
+{
+    "type": "struct",
+    "fields": [
+        {"name": "order_id", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "user_id", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "eval_set", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "order_number", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "order_dow", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "order_hour_of_day", "type": "string", "nullable": true, "metadata": {}},
+        {"name": "days_since_prior_order", "type": "string", "nullable": true, "metadata": {}}
+    ]
+}

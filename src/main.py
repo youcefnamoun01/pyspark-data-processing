@@ -1,27 +1,39 @@
+import os
+import sys
+from dotenv import load_dotenv
 from pyspark.sql import SparkSession, functions as F, types as T
-from processing import clean_str, remove_duplicates, handle_nulls
+from utils.processing_functions import clean_str, remove_duplicates, handle_nulls,load_data
 from pyspark.sql.functions import col, count, desc, asc, sum as sum_
 
+load_dotenv()
+
+# Environment variables
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
 
 # Initialisation de la session Spark
 spark = SparkSession.builder \
-    .appName("TP PySpark") \
-    .config("spark.executor.memory", "4g") \
-    .config("spark.driver.memory", "4g") \
+    .appName("PySparkETL") \
+    .config("spark.hadoop.fs.s3a.access.key", AWS_ACCESS_KEY_ID) \
+    .config("spark.hadoop.fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY) \
+    .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com") \
     .getOrCreate()
 
+#spark.sparkContext.setLogLevel("WARN")
 
 # Chargement des données
-orders = spark.read.csv("data/orders.csv", header=True, inferSchema=True)
-order_products_prior = spark.read.csv("data/order_products__prior.csv", header=True, inferSchema=True)
-products = spark.read.csv("data/products.csv", header=True, inferSchema=True)
-aisles = spark.read.csv("data/aisles.csv", header=True, inferSchema=True)
-departments = spark.read.csv("data/departments.csv", header=True, inferSchema=True)
+orders = load_data(spark, "orders")
+order_products_prior = load_data(spark, "order_products__prior")
+products = load_data(spark, "products")
+aisles = load_data(spark , "aisles")
+departments = load_data(spark, "departments")
 
 # Nettoyage des chaînes de caractères
-products = products.withColumn("product_name", clean_str("product_name"))
-aisles = aisles.withColumn("aisle", clean_str("aisle"))
-departments = departments.withColumn("department", clean_str("department"))
+products = clean_str(products, "product_name")
+aisles = clean_str(aisles, "aisle")
+departments = clean_str(departments, "department")
+
 
 
 # Suppression des doublons
@@ -39,6 +51,7 @@ orders = handle_nulls(orders)
 aisles = handle_nulls(aisles)
 departments = handle_nulls(departments)
 
+"""
 # Compter les commandes par heure
 orders.groupBy("order_hour_of_day").count().orderBy("order_hour_of_day").show()
 
@@ -59,7 +72,7 @@ user_orders.groupBy("user_id", "aisle").count().orderBy("user_id", desc("count")
 user_orders.groupBy("user_id", "department").count().orderBy("user_id", desc("count")).show()
 
 
-"""
+
 # Compter le nombre de fois qu'un produit a été commandé
 product_counts = order_products_prior.groupBy("product_id") \
     .agg(count("*").alias("nb_commandes")) \
@@ -92,9 +105,8 @@ product_pairs = op1.join(op2,(col("op1.order_id") == col("op2.order_id")) & (col
 product_pairs_count = product_pairs.groupBy("prod1", "prod2").count().orderBy(desc("count"))
 product_pairs_count.show(10)
 
-"""""""""""""""""""""
 #Partie 2 : Paires de rayons les plus fréquentes
-"""""""""""
+
 # Ajouter aisle_id aux produits
 order_products_with_aisle = order_products_prior.join(products.select("product_id", "aisle_id"), "product_id")
 
