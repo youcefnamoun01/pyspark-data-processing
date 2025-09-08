@@ -20,7 +20,7 @@ spark = SparkSession.builder \
     .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com") \
     .getOrCreate()
 
-#spark.sparkContext.setLogLevel("WARN")
+spark.sparkContext.setLogLevel("WARN")
 
 # Chargement des données
 orders = load_data(spark, "orders")
