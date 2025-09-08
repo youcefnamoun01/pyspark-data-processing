@@ -3,6 +3,7 @@ import sys
 from dotenv import load_dotenv
 from pyspark.sql import SparkSession, functions as F, types as T
 from utils.processing_functions import clean_str, remove_duplicates, handle_nulls,load_data
+from utils.eda_functions import most_and_least_ordered_products, order_distribution_by_product, most_frequent_product_pairs, most_and_least_frequent_aisle_pairs, hourly_order_distribution, get_top_users, get_user_distribution
 from pyspark.sql.functions import col, count, desc, asc, sum as sum_
 
 load_dotenv()
@@ -21,6 +22,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN")
+
 
 # Chargement des données
 orders = load_data(spark, "orders")
@@ -52,92 +54,32 @@ aisles = handle_nulls(aisles)
 departments = handle_nulls(departments)
 
 
+# Partie 1 : Analyse des produits les plus et moins commandés
+most_ordered, least_ordered = most_and_least_ordered_products(order_products_prior, products)
+most_ordered.show(10)
+least_ordered.show(10)
 
-# --------------------Compter le nombre de fois qu'un produit a été commandé-----------------
-# 2️⃣ Les produits les plus commandés et les moins commandés
-product_counts = order_products_prior.groupBy("product_id") \
-    .agg(count("*").alias("nb_commandes")) \
-    .join(products, "product_id") \
-    .select("product_id", "product_name", "nb_commandes")
+ditribution = order_distribution_by_product(order_products_prior)
+ditribution.show(10)
 
-# Produits les plus commandés
-product_counts.orderBy(desc("nb_commandes")).show(10)
-
-# Produits les moins commandés
-product_counts.orderBy(asc("nb_commandes")).show(10)
-
-# --------------Distributionn---------------------------
-# Distribution du nombre de commandes par produit
-distribution = product_counts.groupBy("nb_commandes").count().orderBy("nb_commandes")
-distribution.show()
-
-
-#-------------------------------------
-
-# Par exemple, prendre 10 000 commandes seulement
-sample_orders = orders.filter(col("eval_set")=="prior").limit(10000)
-sample_order_products = order_products_prior.join(sample_orders, "order_id")
-
-# Puis refaire le self-join sur ce petit échantillon
-op1 = sample_order_products.alias("op1")
-op2 = sample_order_products.alias("op2")
-
-product_pairs = op1.join(op2,(col("op1.order_id") == col("op2.order_id")) & (col("op1.product_id") < col("op2.product_id"))).select(
-    col("op1.product_id").alias("prod1"),
-    col("op2.product_id").alias("prod2")
-)
-
-product_pairs_count = product_pairs.groupBy("prod1", "prod2").count().orderBy(desc("count"))
+product_pairs_count = most_frequent_product_pairs(order_products_prior, orders, sample_size=10000, top_n=10)
 product_pairs_count.show(10)
 
-#Partie 2 : Paires de rayons les plus fréquentes
+most_frequent, least_frequent = most_and_least_frequent_aisle_pairs(order_products_prior, products, aisles)
+most_frequent.show(10)
 
-# Ajouter aisle_id aux produits
-order_products_with_aisle = order_products_prior.join(products.select("product_id", "aisle_id"), "product_id")
+houdly_distribution = hourly_order_distribution(orders)
+houdly_distribution.show(10)
 
-# Aliases pour le self-join
-op1 = order_products_with_aisle.alias("op1")
-op2 = order_products_with_aisle.alias("op2")
+top_clients = get_top_users(orders)
+top_clients.show(10)
 
-# Paires d'aisles par commande
-aisle_pairs = op1.join(op2,(col("op1.order_id") == col("op2.order_id")) & (col("op1.aisle_id") < col("op2.aisle_id"))).select(
-    col("op1.aisle_id").alias("aisle1"),
-    col("op2.aisle_id").alias("aisle2")
-)
+dist_aisle, dist_dept = get_user_distribution(top_clients, order_products_prior, orders, products, aisles, departments)
+print("Distribution par rayons :")
+dist_aisle.show(truncate=False)
 
-# Compter les fréquences
-aisle_pairs_count = aisle_pairs.groupBy("aisle1", "aisle2").count().orderBy(desc("count"))
-
-# Ajouter les noms des rayons
-aisle_pairs_count = aisle_pairs_count \
-    .join(aisles.select(col("aisle_id").alias("aisle1"), col("aisle").alias("aisle_name1")), "aisle1") \
-    .join(aisles.select(col("aisle_id").alias("aisle2"), col("aisle").alias("aisle_name2")), "aisle2") \
-    .select("aisle_name1", "aisle_name2", "count")
-
-# Top 10
-aisle_pairs_count.show(10, truncate=False)
-
-#---------- Compter les commandes par heure
-# Distribution horaire des commandes
-orders.groupBy("order_hour_of_day").count().orderBy("order_hour_of_day").show()
-
-# gros volume de commandes et distribution par rayons/départements
-#-----------Total commandes par utilisateur
-top_users = orders.groupBy("user_id").count().orderBy(desc("count")).limit(10)
-
-# Joindre avec order_products_prior et products pour rayon et department
-user_orders = top_users.join(orders, "user_id") \
-    .join(order_products_prior, "order_id") \
-    .join(products, "product_id") \
-    .join(aisles, "aisle_id") \
-    .join(departments, "department_id")
-
-# Distribution par rayons et départements
-from pyspark.sql.functions import countDistinct
-
-user_orders.groupBy("user_id", "aisle").count().orderBy("user_id", desc("count")).show()
-user_orders.groupBy("user_id", "department").count().orderBy("user_id", desc("count")).show()
-
+print("Distribution par départements :")
+dist_dept.show(truncate=False)
 
 
 spark.stop()
