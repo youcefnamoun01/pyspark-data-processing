@@ -138,8 +138,6 @@ from pyspark.sql.functions import countDistinct
 user_orders.groupBy("user_id", "aisle").count().orderBy("user_id", desc("count")).show()
 user_orders.groupBy("user_id", "department").count().orderBy("user_id", desc("count")).show()
 
-"""
-
 
 
 spark.stop()
