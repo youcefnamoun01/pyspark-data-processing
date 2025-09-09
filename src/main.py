@@ -16,6 +16,7 @@ spark = SparkSession.builder \
     .config("spark.hadoop.fs.s3a.access.key", AWS_ACCESS_KEY_ID) \
     .config("spark.hadoop.fs.s3a.secret.key", AWS_SECRET_ACCESS_KEY) \
     .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com") \
+    .config("spark.driver.memory", "4g") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN")
@@ -63,22 +64,21 @@ order_ditribution.show(10)
 product_pairs_count = most_frequent_product_pairs(order_products_prior, orders, sample_size=10000, top_n=10)
 product_pairs_count.show(10)
 
-""""
+# Paires de rayons les plus fréquemment commandées ensemble
 most_frequent, least_frequent = most_and_least_frequent_aisle_pairs(order_products_prior, products, aisles)
 most_frequent.show(10)
 
+# Distribution horaire des commandes
 houdly_distribution = hourly_order_distribution(orders)
 houdly_distribution.show(10)
 
+# Top clients et leur distribution par rayons et départements
 top_clients = get_top_users(orders)
 top_clients.show(10)
 
 dist_aisle, dist_dept = get_user_distribution(top_clients, order_products_prior, orders, products, aisles, departments)
-print("Distribution par rayons :")
 dist_aisle.show(truncate=False)
-
-print("Distribution par départements :")
 dist_dept.show(truncate=False)
 
-"""
+
 spark.stop()

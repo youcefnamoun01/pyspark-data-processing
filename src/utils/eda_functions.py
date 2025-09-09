@@ -29,7 +29,7 @@ def order_distribution_by_product(order_products_prior):
 
     return distribution
 
-# Paires de produits les plus fréquemment commandées ensemble
+# Paires de produits les plus commandées ensemble
 def most_frequent_product_pairs(order_products, orders, sample_size=None, top_n=10):
     if sample_size is not None:
         orders = orders.limit(sample_size)
@@ -39,6 +39,7 @@ def most_frequent_product_pairs(order_products, orders, sample_size=None, top_n=
     op1 = order_products_joined.alias("op1")
     op2 = order_products_joined.alias("op2")
 
+    # Paires de produits par commande
     product_pairs = op1.join(
         op2,
         (col("op1.order_id") == col("op2.order_id")) & (col("op1.product_id") < col("op2.product_id"))
@@ -47,6 +48,7 @@ def most_frequent_product_pairs(order_products, orders, sample_size=None, top_n=
         col("op2.product_id").alias("prod2")
     )
 
+    # Compter les fréquences
     product_pairs_count = product_pairs.groupBy("prod1", "prod2") \
         .count() \
         .orderBy(desc("count")) \
@@ -54,7 +56,7 @@ def most_frequent_product_pairs(order_products, orders, sample_size=None, top_n=
 
     return product_pairs_count
 
-# Paires de rayons les plus fréquentes
+# Paires de rayons les plus commandés ensemble
 def most_and_least_frequent_aisle_pairs(order_products, products, aisles, top_n=10):
     # Ajouter aisle_id aux produits
     order_products_with_aisle = order_products.join(products.select("product_id", "aisle_id"), "product_id")
