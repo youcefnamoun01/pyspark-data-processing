@@ -118,7 +118,7 @@ ipython_config.py
 #pdm.toml
 .pdm-python
 .pdm-build/
-
+.vscode
 # pixi
 #   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
 #pixi.lock
@@ -145,6 +145,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+airflow_env/
 
 # Spyder project settings
 .spyderproject
@@ -202,6 +203,8 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+/spark-3.5.1-bin-hadoop3.tgz
+/spark
 
 # Marimo
 marimo/_static/
